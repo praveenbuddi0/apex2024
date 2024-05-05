@@ -1,0 +1,198 @@
+1.Write a trigger on opportunity if stage is "closed won" then u cannot update
+#trigger
+---------------
+trigger OpportunityTrigger on Opportunity (Before Update) {
+    
+    if(trigger.isBefore && trigger.isUpdate){
+        OpportunityTriggerHandler.Oppstage(trigger.new,trigger.oldmap);
+    }
+}
+
+#Handler
+-------------
+public class OpportunityTriggerHandler {
+    public static void Oppstage(List<Opportunity> oppList,map<id,Opportunity> oppoldmap){
+        for(Opportunity opp : oppList){
+            if(oppoldmap.get(opp.Id).StageName == 'Closed Won'){
+                opp.addError('Opp is Closed Won cant Update');
+            }
+        }
+    }
+}
+
+2.Write a trigger on create the account with the same name i.e Preventing the users to create Duplicate Accounts.
+#Trigger
+--------
+trigger AccountTrigger on Account (After Update,After insert,before insert,before Delete) {
+    if(trigger.isbefore && trigger.isInsert){
+        AccountTriggerHandler.preventDuplicateInsertion(trigger.new); 
+    }
+}
+
+#Handler
+---------
+public class AccountTriggerHandler {
+   Public static void preventDuplicateInsertion(List<Account> accList){
+        List<String> accNames = new List<String>();
+        for(Account acc : accList){
+            accNames.add(acc.Name);
+        }
+        List<Account> allaccounts = [SELECT id,Name FROM Account WHERE Name IN : accNames];
+        List<String> oldaccNames = new List<String>();
+        for(Account acc : allaccounts){
+			oldaccNames.add(acc.name);            
+        }
+        for(Account acc : accList){
+            if(oldaccNames.contains(acc.name)){
+                acc.addError('Duplicate Name');
+            }
+        }
+    }
+}
+
+3.Write a trigger on if the current user profile is system admin then only the user can insert the record
+#trigger
+--------
+trigger AccountTrigger on Account (After Update,After insert,before insert,before Delete) {
+    if(trigger.isbefore && trigger.isInsert){
+        AccountTriggerHandler.preventInsertion(trigger.new); 
+    }
+}
+
+#handler
+-----------
+public class AccountTriggerHandler {
+    Public static void preventInsertion(List<Account> accList){
+        User u = [SELECT id,Profile.Name FROM User WHERE Profile.Name = 'System Administrator'];
+        for(Account acc : accList){
+            if( acc.OwnerId != u.Id){
+                acc.addError('Only System Admin can Create Records');
+            }
+        }
+    }
+}
+
+4.Write a trigger on prevent account from deletion if account having contact more than 2 contacts
+#trigger
+-----------
+trigger AccountTrigger on Account (After Update,After insert,before insert,before Delete) {
+    if(trigger.isbefore && trigger.isDelete){
+        AccountTriggerHandler.preventdelete(trigger.old); 
+    }
+}
+#handler
+-----------
+public class AccountTriggerHandler {
+    public static void preventdelete(List<Account> accList){
+        set<id> accids = new set<id>();
+        for(Account acc : accList){
+            accids.add(acc.Id);
+        }
+       map<id,Integer> accconcountmap = new map<id,Integer>();
+        List<Account> accconList = [SELECT id,(SELECT id FROM Contacts)FROM Account WHERE Id IN : accids];
+        for(Account acc : accconList){
+            accconcountmap.put(acc.Id,acc.Contacts.size());
+        }
+        system.debug('accconcountmap :'+accconcountmap);
+        for(Account acc : accList){
+            if(accconcountmap.containskey(acc.Id)){
+                integer count = accconcountmap.get(acc.Id);
+                if(count > 2){
+                    acc.addError('Cant Delete');
+                }
+            } 
+        }
+    }
+}
+
+5.Write a trigger on opportunity if stage is closed own then u cannot update
+#trigger
+---------------
+trigger OpportunityTrigger on Opportunity (Before Update) {
+    if(trigger.isBefore && trigger.isUpdate){
+        OpportunityTriggerHandler.Oppstage(trigger.new,trigger.oldmap);
+    }
+}
+
+#Handler
+------------
+public class OpportunityTriggerHandler {
+    public static void Oppstage(List<Opportunity> oppList,map<id,Opportunity> oppoldmap){
+        for(Opportunity opp : oppList){
+            if(oppoldmap.get(opp.Id).StageName == 'Closed Won'){
+                opp.addError('Opp is Closed Won cant Update');
+            }
+        }
+    }
+}
+
+6.Write a trigger on Prevent account from deletion if account having parent account
+#trigger
+-----------
+trigger AccountTrigger on Account (After Update,After insert,before insert,before Delete) {
+    if(trigger.isbefore && trigger.isDelete){
+        AccountTriggerHandler.preventdeleteParentId(trigger.old); 
+    }
+}
+#handler
+-----------
+public class AccountTriggerHandler {
+    public static void preventdeleteParentId(List<Account> accList){
+        for(Account acc : accList){
+            if(acc.ParentId != null){
+                acc.addError('Cant Delete Account has  Parent Id ');
+            }
+        }
+       
+    }
+}
+
+7.When ever a case is created with origin as email then set status as new and Priority as Medium
+#trigger
+------------
+trigger casetrigger on Case(before Insert , before Update){
+     if(trigger.isBefore && trigger.isinsert){
+        caseTriggerHandler.updatestatusandpriority(trigger.new);
+    }
+}
+#handler
+--------------
+public class caseTriggerHandler {
+   public static void updatestatusandpriority(List<Case> casList){
+        List<Case> updatecases = new List<Case>();
+        for(Case c : casList){
+            if(c.Origin == 'Email'){
+                c.Status = 'New';
+                c.Priority = 'Medium';
+                updatecases.add(c);
+            }
+        }
+    }
+}
+
+8.Apex trigger that validates the Email field of a Lead record to ensure it is in a valid format
+#Trigger
+--------------
+trigger patientTrigger on Patient__c (After insert,Before insert,before Update) {
+    if(trigger.isBefore && (trigger.isInsert || trigger.isUpdate )){
+        patientTriggerHandler.emailformat(trigger.new);
+    }
+}
+#Handler
+-----------
+public class patientTriggerHandler {
+   public static void emailformat(List<Patient__c> ptList){
+        List<Patient__c> pList = new List<Patient__c>(); 
+        String regex = '^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$';
+        Pattern EmailPattern = Pattern.compile(regex);
+        for(Patient__c p : ptList){
+            Matcher emailmatch = EmailPattern.matcher(p.Email__c);
+            system.debug('emailmatch :'+emailmatch);
+            if(emailmatch.matches()){
+                pList.add(p);
+            }else{
+                p.Email__c.addError('email is not in Valid Format');
+            }
+        }
+    }
+}

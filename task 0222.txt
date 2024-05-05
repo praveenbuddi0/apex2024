@@ -1,0 +1,16 @@
+Tasks
+-------
+
+1. Create a hourly batch class that updates all the Contacts and leads email addresses to bigworks@gmail.com and increment a number field on the contact and leads called Contact_Email_Update_c and lead_Email_update_c updated. This field should update each time the update happened from the batch class.
+also send email of all the success and error record ids to a email adreess in custom label. 
+Note: Email_address_1_c Contact_Email_Update_c are field on contact
+      Email_address_2_c Lead_Email_Update_c are field on Lead
+      
+Hint: since its a 2 object use custom metadata to store the object and field mappings and refer that in batch class. 
+   
+2. Create a User record as  whenever a contact email is changed.(use apex trigger not flows or process builder)
+
+
+
+
+Create multiple record types on case object. Create a flow for below requirement. When 1 record type case is created/updated if start date is empty update today as startdate and after 4 days as end date. for other record types, if startdate or enddate is empty, update case status with Rejected. If any case enddate is today make case status as Expired. If any case start date is tomorrow, update status as "Submitted", if any case startdate is today make status as "Approved".
