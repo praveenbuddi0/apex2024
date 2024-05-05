@@ -1,0 +1,51 @@
+public class AppointmentTriggerHandler {
+    Public static void sendemails(List<Appointment__c> appList){
+        set<id> appids = new set<id>();
+        List<String> toaddress = new List<String>();
+        List<Messaging.SingleEmailMessage> emailList = new List<Messaging.SingleEmailMessage>();
+        if(!appList.isEmpty()){
+            system.debug('appList is Not Empty');
+            for(Appointment__c ap : appList){
+                appids.add(ap.Id);
+                system.debug('appids :'+appids);
+            }
+        }
+        List<Appointment__c> appointments = [SELECT id,Appointment_Date__c,DoctorName__r.Email__c,DoctorName__r.Name,PatientName__r.Email__c,PatientName__r.Name FROM Appointment__c WHERE Id IN :appids];
+        
+        //EmailTemplate temp = [SELECT id,Name,Subject,HtmlValue FROM EmailTemplate WHERE Name = 'Apollo Appointment'];
+        
+        for(Appointment__c ap : appointments){
+            
+            toaddress.add(ap.DoctorName__r.Email__c);
+            toaddress.add(ap.PatientName__r.Email__c);
+        }
+        if(!toaddress.isEmpty()){
+            system.debug('toaddress is Not Empty');
+            for(Appointment__c ap : appointments){
+                Messaging.SingleEmailMessage msg = new Messaging.singleEmailMessage();
+                //msg.setTemplateId(temp.Id);
+                msg.setToAddresses(toaddress);
+                msg.setSubject('Appointment Letter');
+                string body = 'Hello '+ap.PatientName__r.Name+'<br/> You have an Appointment on'+ap.Appointment_Date__c+'with DR.'+ap.DoctorName__r.Name;
+                msg.setHtmlBody(body);
+                //msg.setWhatId(ap.Id);
+                //msg.setWhatId(ap.DoctorName__r.Id);
+                //msg.setWhatId(ap.PatientName__r.Id);
+                emailList.add(msg);
+            }
+        }
+        if(!emailList.isEmpty()){
+            system.debug('emailList is Not Empty');
+            List<Messaging.SendEmailResult> results = Messaging.sendEmail(emailList);
+        }
+    }
+    
+}
+
+#Trigger
+------------------------------------
+trigger AppointmentTrigger on Appointment__c (After insert) {
+    if(trigger.isAfter && trigger.isInsert){
+        AppointmentTriggerHandler.sendemails(trigger.new);
+    }
+}

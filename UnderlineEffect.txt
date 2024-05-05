@@ -1,0 +1,37 @@
+<template>
+    <lightning-card title="Underline Effect">
+     <div class ="slds-p-around_xx-large">
+        <div  class="container"  >Hover over me</div>
+     </div>
+    </lightning-card>
+</template>
+
+#CSS
+----------------------------------
+
+/* styles.css */
+.container {
+    padding: 20px;
+    color: brown;
+    font-weight: 900;
+}
+
+.container::before {
+   
+    
+    cursor: pointer; /* changes cursor to pointer on hover */
+    text-decoration: none; /* removes default underline */
+    transition: text-decoration 0.3s ease; /* adds transition effect */
+    transform: scaleX(0);
+}
+
+.container:hover {
+    text-decoration: underline; /* adds underline on hover */
+    cursor: pointer;
+    color: rgb(166, 239, 158);
+    text-decoration-color: rgb(42, 3, 236);
+    transition: all 0.3s ease-in-out;
+    transform: scaleX(1);
+
+}
+

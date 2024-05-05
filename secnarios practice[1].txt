@@ -1,0 +1,24 @@
+Whenever lead is created assign lead to a user based on workload,
+ Whose work load is less assign new lead to that specific user.
+
+Create a schedule to send automated email notifications to users
+ based on certain conditions, such as sending reminders for upcoming tasks 
+and pending approvals of next 3 days at 8 AM everyday.
+
+Create a custom object called Position, that has Contact lookup. 
+If one Contact has 2 or more positions with Selected Stage and 
+same starting date make recent one active and remaining inactive.
+ Note : Active is a checkbox, Stage is a picklist field (Write a batch).
+
+whenever Lead is created assign that Lead based on user workload balance, 
+means whose New Leads are less, assign this Lead to that user. 
+Send an email to lead owners daily with each lead status and other info in mail,
+ only one mail per day. Suppose if one owner has 2 lead records, 
+he should get 2 lead status in same email.
+
+Create Job, Job Application two custom objects. 
+Job Application is a junction object between Job and contact(Candidate).
+ When one job has more than 200 job applications,
+ send an email to job owner saying job has too many applications. 
+This mail should be single time mail. Email should not be repeated for same job. 
+And at 300 job applications mail should be sent again and then stop sending mails.

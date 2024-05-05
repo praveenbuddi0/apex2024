@@ -1,0 +1,76 @@
+global class updatecontactandleadEmailsBatch implements database.batchable<sObject>,database.stateful,schedulable{
+    set<String> successIds = new set<String>();
+    set<String> failIds = new set<String>();
+    Map<String, ContactLead_settings__mdt> mdtsettingsmap = new Map<String, ContactLead_settings__mdt>();
+    public void execute(schedulablecontext scon){
+        updatecontactandleadEmailsBatch obj = new updatecontactandleadEmailsBatch();
+        database.executebatch(obj,500);
+        
+         String cronExp = '0 0 * * * ?'; 
+		System.schedule('Hourly Job', cronExp, new ScheduleupdatecontactandleadEmailsBatch());
+    }
+    
+    public updatecontactandleadEmailsBatch(){
+        List<ContactLead_settings__mdt> conLeadSet = ContactLead_settings__mdt.getAll().values();
+        for(ContactLead_settings__mdt conLead :conLeadSet){
+            if(!mdtsettingsmap.containsKey(conLead.Object_Name__c)){
+                mdtsettingsmap.put(conLead.Object_Name__c, conLead);
+            }
+        }
+    }
+    global iterable<sObject> start(database.batchablecontext bcon){
+       List<sObject> sObjRec = New List<sObject>();
+ 	   String leadQuery = 'SELECT Id, ';
+        String conQuery = 'SELECT Id, ';
+        for(ContactLead_settings__mdt sett : mdtsettingsmap.values()){
+            if(sett.Object_Name__c == 'Lead'){
+                leadQuery += sett.Field_Name__c + ', ' + sett.Number_Update__c + ' FROM ' + sett.Object_Name__c;
+            }else if(sett.Object_Name__c == 'Contact'){
+                conQuery += sett.Field_Name__c + ', ' + sett.Number_Update__c + ' FROM ' + sett.Object_Name__c;
+            }
+        }
+        sObjRec.addAll(Database.query(leadQuery));
+        sObjRec.addAll(Database.query(conQuery));
+        return sObjRec;
+       
+    }
+    global void execute(Database.BatchableContext bcon, List<sObject> sObjList){
+        List<SObject> recordsToUpdate = new List<SObject>();
+        for (SObject s : sObjList) {
+            String objectName = s.getSObjectType().getDescribe().getName();
+            String fieldName = mdtsettingsmap.get(objectName).Field_Name__c;
+            String numberFieldName = mdtsettingsmap.get(objectName).Number_Update__c;
+            s.put(fieldName, 'bigworks@gmail.com');
+            Decimal numValue;
+            if(system.now().hour() <1){
+                numValue = 1;
+            }else{
+                numValue = (Decimal)s.get(numberFieldName) + 1;
+            }
+            s.put(numberFieldName, numValue);
+            recordsToUpdate.add(s);
+            //Integer currentValue = (Integer)s.get(numberFieldName);
+            
+        }
+        
+        if (!recordsToUpdate.isEmpty()) {
+            try {
+                List<database.saveresult> results =  Database.update(recordsToUpdate);
+                for(database.saveresult r : results){
+                    if(r.issuccess()){
+                        successIds.add(r.getId());
+                    } else{
+                        failIds.add(r.getId()); 
+                    }                   
+                }
+            } catch (Exception e) {
+                
+            }
+        }
+    }
+    global void finish(database.batchablecontext bcon){
+        
+        //Emailclass.sendemail(successids, failids);     
+    }
+    
+}

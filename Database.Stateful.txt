@@ -1,0 +1,25 @@
+global class Statefullbatch implements Database.Batchable<sobject>{
+    private integer noofbankingrcds = 0;
+	global database.queryLocator start(Database.BatchableContext bcon){
+       return Database.getQueryLocator('SELECT id,Industry FROM Account');
+    }
+    global void execute(Database.BatchableContext bcon,List<sObject> rcdstoprocess){
+        for(sObject so : rcdstoprocess){
+            Account acc = (Account) so;
+            if(acc.Industry == 'Banking'){
+                noofbankingrcds = noofbankingrcds+1;
+            }
+        }
+    }
+    global void finish(Database.BatchableContext bcon){
+         List<Messaging.singleEmailMessage> emailstosent = new List<Messaging.singleEmailMessage>();
+        AsyncApexjob job = [SELECT id,NumberofErrors,status,TotalJobItems,JobItemsProcessed FROM AsyncApexjob WHERE Id = :bcon.getjobId()];
+         Messaging.singleEmailMessage  msg = new Messaging.singleEmailMessage();
+            msg.setToAddresses(new List<String>{'mohankrishna0821@gmail.com'});
+            msg.setSubject('Number of Banking Records');
+            string body = 'Number of Banking Records are :'+noofbankingrcds;
+            msg.setHtmlBody(body);
+            emailstosent.add(msg);
+        List<Messaging.SendEmailResult> results = Messaging.sendEmail(emailstosent);
+    }
+}

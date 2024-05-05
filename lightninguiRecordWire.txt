@@ -1,0 +1,35 @@
+//HTML
+<template>
+    <lightning-card>
+    <div >
+            LastName :
+            <lightning-formatted-text value={name}  ></lightning-formatted-text>
+            <br/>
+            <br/>
+            Phone:
+            <lightning-formatted-text value={phone}  ></lightning-formatted-text>
+            <br/>
+            RecordID = {recordId}
+    </div>
+    </lightning-card>
+</template>
+//JS
+-----
+import { LightningElement, api, wire } from 'lwc';
+import { getRecord,getFieldValue} from 'lightning/uiRecordApi';
+import Field_Name from '@salesforce/schema/Contact.LastName';
+import Field_Phone from '@salesforce/schema/Contact.Phone';
+export default class UiRecordApi extends LightningElement {
+    
+    @api recordId;    
+   
+    @wire(getRecord,{recordId:'$recordId',fields:[Field_Name,Field_Phone]}) contact;
+
+    get name(){
+        return  getFieldValue(this.contact.data,Field_Name);
+    }
+    get phone(){
+        return getFieldValue(this.contact.data,Field_Phone);
+    }
+
+}

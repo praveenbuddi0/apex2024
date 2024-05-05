@@ -1,0 +1,28 @@
+
+Create a schedule to send automated email notifications to users based on certain conditions, such as sending reminders for upcoming tasks and pending approvals of next 3 days at 8 AM everyday.
+
+Create a custom object called Position, that has Contact lookup. If one Contact has 2 or more positions with Selected Stage and same starting date make recent one active and remaining inactive.
+ Note : Active is a checkbox, Stage is a picklist field (Write a batch).
+
+
+Create Job, Job Application two custom objects. Job Application is a junction object between Job and contact(Candidate). When one job has more than 200 job applications, send an email to job owner saying job has too many applications. This mail should be single time mail. Email should not be repeated for same job. And at 300 job applications mail should be sent again and then stop sending mails.
+
+whenever Lead is created assign that Lead based on user workload balance, means whose New Leads are less, assign this Lead to that user.
+ Send an email to lead owners daily with each lead status and other info in mail, only one mail per day.
+ Suppose if one owner has 2 lead records, he should get 2 lead status in same email.
+
+DemoTtrigger1 Populates Description field with the user first name who creates or updates the record by using userInfo standard keyword . 
+And also does not allow user to delete the record .
+
+Create community users for "all contacts with check box is_primary contact true". Send emails to created users with proper email template. 
+Updatecheckbox field (Portal user created) to true on Account object related to primary contact and check if anyother contacts related to that account have users or is primary contact checkbox true. 
+If yes inactive those users and update contact checkbox false. Write a test class.(Batch)
+
+Create a schedule to send automated email notifications to users based on certain conditions, such as sending reminders for upcoming tasks and pending approvals of next 3 days at 8 AM everyday.
+
+Create multiple record types on case object. Create a flow for below requirement. When 1 record type case is created/updated if start date is empty update today as startdate and after 4 days as end date. for other record types, if startdate or enddate is empty, update case status with Rejected. If any case enddate is today make case status as Expired. If any case start date is tomorrow, update status as "Submitted", if any case startdate is today make status as "Approved".
+
+One assigner(Owner) can not have more than one case with approved status per day(means Approved in Approval process), If it is there, keep latest case in approved status(Custom Field) and change remaining cases with approved status to "Hold".
+
+Whenever one user receives email update salesforce user record checkbox (Received Email).
+

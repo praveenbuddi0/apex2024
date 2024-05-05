@@ -1,0 +1,30 @@
+//Apex Class
+public with sharing class GetdatathroughApexHandler {
+    @AuraEnabled(cacheable = true)
+    public static Contact getcontactrcd(string conId){
+        Return [SELECT id,LastName,Phone FROM Contact WHERE Id = :conId  WITH SECURITY_ENFORCED];
+    }
+}
+//HTML
+-------
+<template>
+    <lightning-card>
+    <template if:true= {contact.data}>
+        Contact Name = {contact.data.LastName}
+        Contact Phone = {contact.data.Phone}
+        Contact EMail = {contact.data.Email}
+    </template>
+    </lightning-card>
+</template>
+//JS
+-----
+import { LightningElement, api, wire } from 'lwc';
+import getcontactrcd from '@salesforce/apex/GetdatathroughApexHandler.getcontactrcd';
+export default class GetdatathroughApex extends LightningElement {
+    
+    @api recordId;
+
+    @wire(getcontactrcd,{conId:'$recordId'}) contact;
+
+
+}
