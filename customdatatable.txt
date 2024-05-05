@@ -1,0 +1,358 @@
+<template>
+    <lightning-card>
+        <lightning-layout >
+            <lightning-layout-item size="12" small-device-size="12" medium-device-size="6" large-device-size="4"
+                padding="horizontal-small">
+                <div class="custom-box">
+                    <lightning-input type="text" label="Typed Name" value={accNameinputvar} name="accname"  class="custominputcss"
+                        onchange={handlechange}></lightning-input>
+                </div>
+            </lightning-layout-item>
+            <lightning-layout-item size="12" small-device-size="12" medium-device-size="6" large-device-size="4"
+                padding="horizontal-small">
+                <div class="custom-box">
+                </div>
+            </lightning-layout-item>
+            <lightning-layout-item size="12" small-device-size="12" medium-device-size="6" large-device-size="4"
+                padding="horizontal-small">
+                
+                <span>
+                    <lightning-button variant="Brand" label="Search" onclick={handleclick}
+                        class="slds-float_right customsearchbutton"></lightning-button>
+                </span>
+                
+                <span>
+                    <lightning-input type="toggle" label="Edit" name="edit" onchange={handlechange}
+                        class="slds-float--right customtogglecss"></lightning-input>
+                        <span>
+                            <lightning-input type="text" placeholder="Searh here" name="name" value={namevar} class="slds-float--right small-search-input"
+                                onchange={handlechange}></lightning-input>
+                        </span>
+                </span>
+            </lightning-layout-item>
+        </lightning-layout>
+
+        <template if:true={showtable}>
+            <lightning-card>
+                <div class="slds-m-around_large   ">
+                    <lightning-layout horizontal-align="center">
+                        <lightning-layout-item size="10">
+                            <table
+                                class="slds-float--center slds-table slds-table_cell-buffer slds-table_bordered slds-border_left slds-border_right customtable"
+                                aria-labelledby="element-with-table-label other-element-with-table-label" id="mytable" >
+                                <thead >
+                                    <tr>
+                                        <th>Rating</th>
+                                        <th>Phone</th>
+                                        <th>Annual Revenue</th>
+                                        <th class="customthcss"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template iterator:it={filterList} for:index="index">
+                                        <tr key={it.value}>
+                                            <td width="20%">
+                                                
+                                                <lightning-combobox name="rating" data-label={it.value.keyid}
+                                                    variant="label-hidden"  onchange={handleeditChange}
+                                                    class="customtableinputcss" 
+                                                    value={it.value.Rating} options={ratingoptions}>
+                                                </lightning-combobox>
+                                                
+                                            </td>
+                                            <td width="20%">
+                                                <lightning-input type="text" name="accPhone" data-label={it.value.keyid}
+                                                    value={it.value.Phone} variant="label-hidden"
+                                                     onchange={handleeditChange}>
+                                                </lightning-input>
+                                            </td>
+                                            <td data-label="Annual Revenue" width="20%">
+                                                <lightning-input type="number" formatter="currency" name="annualrevenue"
+                                                data-label={it.value.keyid} variant="label-hidden"  
+                                                    onchange={handleeditChange} value={it.value.AnnualRevenue}>
+                                                </lightning-input>
+                                            </td>
+                                            <td>
+                                                <div class="slds-float--center">
+                                                    <template if:true={it.value.addDelete}>
+                                                        <lightning-button-icon data-index={it.value.keyid}
+                                                        class="customtablebuttoncss" icon-name="action:delete" 
+                                                            onclick={handleRemoveRow}></lightning-button-icon>
+                                                    </template>
+                                                    <template if:true={it.last}>
+                                                        <lightning-button-icon data-index={it.value.keyid}
+                                                            icon-name="action:new" class="customtablebuttoncss"
+                                                            onclick={handleAddRow}></lightning-button-icon>
+                                                    </template>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </lightning-layout-item>
+                    </lightning-layout>
+                </div>
+            </lightning-card>
+        </template>
+        <div class="slds-m-around_xx-large">
+            <template if:true={datatable}>
+                <div style="height: 300px;">
+                    <lightning-datatable key-field="id" data={data} columns={columns}>
+                    </lightning-datatable>
+                </div>
+            </template>
+        </div>
+        <div slot="footer" class="slds-grid">
+            <div class="slds-col slds-text-align_center">
+                <lightning-button variant="neutral" label="Reset" class="slds-m-right_medium" onclick={resethandle}> </lightning-button>
+                <lightning-button variant="brand" label="Save" onclick={saveRows}></lightning-button>
+            </div>
+        </div>
+        
+    </lightning-card>
+</template>
+
+
+JS
+
+import { LightningElement,track,wire} from 'lwc';
+
+import {getObjectInfo, getPicklistValues } from 'lightning/uiObjectInfoApi';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+
+import ACCOUNT_OBJECT from "@salesforce/schema/Account";
+import RATING from '@salesforce/schema/Account.Rating';
+
+import getAccounts from '@salesforce/apex/AccountcustomdatatableHandler.getAccounts';
+import saveAccounts from '@salesforce/apex/AccountcustomdatatableHandler.saveAccounts';
+
+const columns = [
+    { label: 'Rating', fieldName: 'Rating', type: 'text' },
+    { label: 'Phone', fieldName: 'Phone', type: 'phone' },
+    { label: 'Annual Revenue', fieldName: 'AnnualRevenue', type: 'currency' },
+];
+
+export default class Accountcustomdatatable extends LightningElement {
+
+    @track filterList = [];
+    @track editvar;
+
+    ratingoptions = [{ value: '-None-', label: '' }];
+    columns = columns;
+    
+    enteredName;
+    accNameinputvar;
+    accountrecordTypeId;
+    namevar;
+    data;
+
+    keyIndex = 0;
+
+    norecords = false;
+    showtable = true;
+    adddelete = false;
+    datatable = false;
+    editrecords = true;
+
+    @wire(getObjectInfo, { objectApiName: ACCOUNT_OBJECT })
+    accountinfo({ data, error }) {
+        if (data) {
+            this.accountrecordTypeId = data.defaultRecordTypeId;
+            //console.log(' accountrecordTypeId :'+this.accountrecordTypeId);
+        } 
+    }
+
+    @wire(getPicklistValues, { recordTypeId: '$accountrecordTypeId', fieldApiName: RATING })
+    ratinginfo({ data, error }) {
+        if (data) {
+            
+            data.values.forEach(val => {
+                this.ratingoptions = [...this.ratingoptions, { value: val.value, label: val.label }];
+                //console.log('ratingoptions :'+JSON.stringify(this.ratingoptions));
+            });
+            
+        } else if (error) {
+
+        }
+    }
+
+    // Handle Search_Input,Buttons,TypedName_Input 
+    handlechange(event){
+        const nameinput = event.target.name;
+        if(nameinput === 'name'){
+            this.namevar = event.target.value;
+        }else if(nameinput === 'edit'){
+            this.editvar = event.target.checked;
+            if(this.editvar === true){
+                this.showtable = true;
+                this.datatable = false;
+            }else{
+                this.showtable = false;
+                this.datatable = true;
+            }
+        }else if(nameinput === 'accname'){
+            this.accNameinputvar = event.target.value;
+        }
+    }
+    
+    // Handle Search Button onClick
+    handleclick(event){
+        getAccounts({nameval : this.namevar}).then(result=>{
+           // console.log('result :'+JSON.stringify(result));
+            if(result){
+                this.accNameinputvar = this.namevar;      
+                this.namevar = '';
+                this.data = result;
+                let index = -1;
+                result = result.map((element) =>  {
+                  index++;
+                  return  {...element,
+                    keyid: index,
+                    addDelete : true
+                    }         
+                });
+                this.filterList = [...result];
+                //console.log('filterList :'+JSON.stringify(this.filterList));
+                if(this.editvar === true){
+                    this.datatable = false;
+                    this.showtable = true;
+                }else{
+                    this.datatable = true;
+                    this.showtable = false;
+                }
+                if(this.filterList.length === 0){
+                     this.handleAddRow();
+                     this.datatable = false;
+                     this.showtable = true;
+                     this.showToastMessage('No Records Found', 'No Records Found ', 'info');         
+                }              
+            }
+        }).catch(error=>{
+
+        });
+    }
+    
+    //To Add Row in Table
+    handleAddRow() {
+        let objRow = {
+            Rating: '',
+            Phone: '',
+            AnnualRevenue: '',
+            addDelete: true,
+            keyid: ++this.keyIndex  
+        }
+        if (this.filterList.length === 0) {
+            objRow.addDelete = false;
+        } else {
+            this.filterList[0].addDelete = true;
+        }
+
+        this.filterList = [...this.filterList, objRow];
+        console.log('filterList :'+JSON.stringify(this.filterList));
+    }
+
+    // To delete row
+    handleRemoveRow(event) {
+        let indexnum = event.currentTarget.dataset.index;
+        let filter = this.filterList.filter((ele) => { 
+            //console.log('indexrevove :'+event.currentTarget.dataset.index)
+            return parseInt(ele.keyid) !== parseInt(event.currentTarget.dataset.index);
+        });
+        console.log('filter :'+JSON.stringify(filter));
+        filter.forEach((item, index) => {
+            if (index > indexnum) {
+                item.keyid = index - 1;
+            }
+        });
+        if(filter.length === 1){
+            filter[0].addDelete = false;
+        }
+        this.filterList = [...filter];
+    }
+
+    connectedCallback() {
+        this.handleAddRow();
+    }
+
+    handleeditChange(event) {
+        let index = this.filterList.findIndex((element) => parseInt(element.keyid)  === parseInt(event.target.dataset.label));
+        //console.log('index :'+index); 
+        if(event.target.name === 'rating') {
+            this.filterList[index].Rating = event.target.value;
+        } else if (event.target.name === 'annualrevenue') {
+            this.filterList[index].AnnualRevenue = event.target.value;
+            console.log('Changed annual revenue: ' + this.Changedrevenuevar);
+        } else if (event.target.name === 'accPhone') {
+            this.filterList[index].Phone = event.target.value;
+            
+        }
+        console.log('Changed phone: ' + JSON.stringify(this.filterList));
+    }
+    
+    saveRows() {
+        let modifiedRecords = [];
+        //this.filterList
+        //console.log('modifiedRecords :' + JSON.stringify(modifiedRecords));
+        saveAccounts({ wrpapexobj: this.filterList, accName : this.accNameinputvar }).then(result => {
+            this.filterList = [];
+            if(result){
+                this.showToastMessage('success', 'Accounts Saved Successfully!!', 'Success');
+            }
+            
+            if (this.filterList.length == 0) {
+                this.handleAddRow();
+            }
+        }).catch(error => {
+            this.processErrorMessage(error);
+            this.isSpinner = false;
+        })
+    }
+    resethandle(event){
+        this.enteredName = '';
+        this.namevar = '';
+        this.data = [];
+        this.filterList = [];
+        if(this.filterList.length === 0 ){
+            this.handleAddRow();
+        }
+    
+        const inputs = this.template.querySelectorAll('lightning-input');
+        inputs.forEach(input => {
+            input.value = '';
+        });
+        const inputspicklist = this.template.querySelectorAll('lightning-combobox');
+        inputspicklist.forEach(inputspicklist => {
+            inputspicklist.value = '';
+        });
+    
+    }
+    
+    processErrorMessage(message) {
+        let errorMsg = '';
+        if (message) {
+            if (message.body) {
+                if (Array.isArray(message.body)) {
+                    errorMsg = message.body.map(e => e.message).join(', ');
+                } else if (typeof message.body.message === 'string') {
+                    errorMsg = message.body.message;
+                }
+            }
+            else {
+                errorMsg = message;
+            }
+        }
+        this.showToastMessage('error', errorMsg, 'Error!');
+    }
+
+    showToastMessage(variant, message, title) {
+        this.dispatchEvent(
+            new ShowToastEvent({
+                title: title,
+                message: message,
+                variant: variant
+            })
+        );
+    }
+
+}
