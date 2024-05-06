@@ -1,0 +1,53 @@
+<template>
+    <lightning-card>
+        <div style="height: 300px;">
+            <template if:true={opplineitems.data}>
+                <lightning-datatable key-field="id" data={opplineitems.data} columns={columns} onsave={handleSave}>
+                </lightning-datatable>
+            </template>
+        </div>
+    </lightning-card>
+</template>
+
+_____________________________________
+
+JS
+import { LightningElement,api,wire } from 'lwc';
+import { updateRecord } from 'lightning/uiRecordApi';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import getopplineitems from '@salesforce/apex/OpplineitemsdatatableHandler.getopplineitems';
+
+const columns = [
+    { label: 'Opportunity Product Name', fieldName: 'Name' },
+    { label: 'Quantity', fieldName: 'Quantity', type: 'Number' },
+    { label: 'Sales Price', fieldName: 'UnitPrice', type: 'Currency' },
+    { label: 'List Price', fieldName: 'ListPrice', type: 'date' },
+    { label: 'Discount', fieldName: 'Discount', type: 'Percent', editable: true}
+    
+];
+export default class Opplineitemsdatatable extends LightningElement {
+    saveDraftValues;
+    columns = columns;
+    
+    @api recordId;
+
+    @wire(getopplineitems,{recId :'$recordId'}) opplineitems;
+
+    
+
+}
+
+_________________________________________________\
+
+Apex
+
+public with sharing class OpplineitemsdatatableHandler {
+    @AuraEnabled(cacheable=true)
+    public static List<OpportunityLineItem> getopplineitems(string recId){
+        List<OpportunityLineItem> opplineitems = new  List<OpportunityLineItem>();
+        if(recId != '' || recId != null){
+             opplineitems = [SELECT UnitPrice,Discount,Name,Quantity FROM OpportunityLineItem WHERE OpportunityId =: recId];
+        }
+        return opplineitems;
+    }
+}

@@ -1,0 +1,107 @@
+<template>
+    <lightning-card>
+        <div style="height: 300px;">
+            <template if:true={norecords}>
+                <p>No Records for this Opportunity</p>
+            </template>
+            <template if:true={showme}>
+                <lightning-datatable key-field="id" data={opplineitems} columns={columns} onsave={handleSave}
+                    draft-values={saveDraftValues} hide-checkbox-column show-row-number-column>
+                </lightning-datatable>
+            </template>
+        </div>
+    </lightning-card>
+</template>
+
+_____________________________________
+
+JS
+import { LightningElement,api,wire,track } from 'lwc';
+import { updateRecord } from 'lightning/uiRecordApi';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import { refreshApex } from "@salesforce/apex";
+import getopplineitems from '@salesforce/apex/OpplineitemsdatatableHandler.getopplineitems';
+
+const columns = [
+    { label: 'Opportunity Product Name', fieldName: 'Name' },
+    { label: 'Quantity', fieldName: 'Quantity', type: 'Number' },
+    { label: 'Sales Price', fieldName: 'UnitPrice', type: 'Currency', editable: true},
+    { label: 'List Price', fieldName: 'ListPrice', type: 'date' },
+    { label: 'Discount', fieldName: 'Discount', type: 'Percent', editable: true}
+    
+];
+export default class Opplineitemsdatatable extends LightningElement {
+    saveDraftValues = [];
+    columns = columns;
+    showme = false;
+    norecords = false;
+    @track opplineitems;
+    @api recordId;
+
+    @wire(getopplineitems,{recId :'$recordId'})
+     opplineitemsdata({data,error}){
+        if(data != null){
+            this.showme = true;
+            this.opplineitems = data;
+
+        }if(data === null){
+            this.norecords = true;
+            this.showme = false;
+
+        }
+         if(error){
+            console.log(error);
+        }
+     }
+
+    handleSave(event) {
+        this.saveDraftValues = event.detail.draftValues;
+        const recordInputs = this.saveDraftValues.slice().map(draft => {
+            const fields = Object.assign({}, draft);
+            return { fields };
+        });
+        
+        const promises = recordInputs.map(recordInput => updateRecord(recordInput));
+        Promise.all(promises).then(res => {
+            this.ShowToast('Success', 'Records Updated Successfully!', 'success', 'dismissable');
+            this.saveDraftValues = [];
+            return this.refresh();
+        }).catch(error => {
+            this.ShowToast('Error', 'An Error Occured!!', 'error', 'dismissable');
+        }).finally(() => {
+            this.saveDraftValues = [];
+        });
+    }
+ 
+    ShowToast(title, message, variant, mode){
+        const evt = new ShowToastEvent({
+                title: title,
+                message:message,
+                variant: variant,
+                mode: mode
+            });
+            this.dispatchEvent(evt);
+    }
+ 
+    // This function is used to refresh the table once data updated
+    async refresh() {
+        await refreshApex(this.contacts);
+    }
+    
+
+}
+
+_________________________________________________\
+
+Apex
+
+public with sharing class OpplineitemsdatatableHandler {
+    @AuraEnabled(cacheable=true)
+    public static List<OpportunityLineItem> getopplineitems(string recId){
+        List<OpportunityLineItem> opplineitems = new  List<OpportunityLineItem>();
+        if(recId != '' || recId != null){
+             opplineitems = [SELECT UnitPrice,Discount,Name,Quantity FROM OpportunityLineItem WHERE OpportunityId =: recId];
+        }
+        return opplineitems;
+    }
+}
